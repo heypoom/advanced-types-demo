@@ -18,30 +18,46 @@ const t = {
     type: 'optional',
     item: type,
   }),
+
+  enum: <Choices extends string[]>(
+    ...choices: Choices
+  ): {type: 'enum'; choices: Choices} => ({
+    type: 'enum',
+    choices,
+  }),
+
+  type: <T, N extends string>(
+    name: N,
+    schema: T
+  ): {type: 'type'; name: N; schema: T} => ({
+    type: 'type',
+    name,
+    schema,
+  }),
 }
 
-function create<T, N extends string>(
-  name: N,
-  schema: T
-): {type: 'type'; name: N; schema: T} {
-  return {type: 'type', name, schema}
-}
-
-const Person = create('person', {
+const Person = t.type('person', {
   id: t.id(),
   name: t.text(),
   age: t.number(),
 })
 
-const Team = create('team', {
+const Team = t.type('team', {
   name: t.text(),
   lead: t.of(Person),
   people: t.many(t.of(Person)),
 })
 
-const Project = create('project', {
+const ProjectStatus = t.enum(
+  'forming team',
+  'interviewing users',
+  'prototyping'
+)
+
+const Project = t.type('project', {
   name: t.text(),
   team: t.of(Team),
+  status: t.of(ProjectStatus),
 })
 
 interface ReturnTypeMapping {
@@ -60,14 +76,19 @@ type B_Result = {
   -readonly [K in keyof R]: ReturnTypeMapping[R[K]['type']]
 }
 
+type EnumType<T extends string[] = []> = {type: 'enum'; choices: T}
+
 /** Map an unboxed input type (e.g. scalar, constructed type) to the native return type. */
 type MapInputToReturnType<Input> =
   // Is a scalar type? (string, number)
   Input extends {type: Scalar}
     ? ReturnTypeMapping[Input['type']]
-    : // Is a constructed type with schema? (created by create() function)
+    : // Is a constructed type with schema? (created by t.type() function)
     Input extends {type: 'type'; schema: infer Schema}
     ? MapSchemaToReturnType<Schema>
+    : // Is an enum type? (created by t.enum() function)
+    Input extends EnumType<infer Choices>
+    ? Choices[number]
     : Input
 
 /** Map a schema definition `Record<string, Input>` to the native return type. */
@@ -130,4 +151,5 @@ type ProjectSchema = MapSchemaToReturnType<typeof Project.schema>
 const project: ProjectSchema = {
   name: 'Team Red',
   team: teamRed,
+  status: 'forming team',
 }
