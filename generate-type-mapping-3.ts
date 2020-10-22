@@ -39,6 +39,11 @@ const Team = create('team', {
   people: t.many(t.of(Person)),
 })
 
+const Project = create('project', {
+  name: t.text(),
+  team: t.of(Team),
+})
+
 interface ReturnTypeMapping {
   id: string
   string: string
@@ -86,10 +91,10 @@ type MapBoxedInputToReturnType<Input> =
 
 type C_Result = MapSchemaToReturnType<typeof Person.schema>
 
-type D = typeof Team.schema
-type D_Result = MapSchemaToReturnType<D>
-type D_R_Lead = D_Result['lead']
-type D_R_People = D_Result['people']
+type TeamSchema = MapSchemaToReturnType<typeof Team.schema>
+
+type D_R_Lead = TeamSchema['lead']
+type D_R_People = TeamSchema['people']
 
 type TypeRef = MapSchemaToReturnType<{
   people: {
@@ -110,12 +115,19 @@ type TypeArrayRef = MapSchemaToReturnType<{
 
 const typeArrayRef: TypeArrayRef = [{name: 'Hello!'}]
 
-const project: D_Result = {
-  name: 'Project Altair',
+const teamRed: TeamSchema = {
+  name: 'Team Red',
   lead: {
     id: 'lab-member-001',
     name: 'Poom',
     age: 19,
   },
   people: [{id: 'lab-member-001', name: 'Poom', age: 19}],
+}
+
+type ProjectSchema = MapSchemaToReturnType<typeof Project.schema>
+
+const project: ProjectSchema = {
+  name: 'Team Red',
+  team: teamRed,
 }
