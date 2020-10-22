@@ -56,7 +56,7 @@ type B_Result = {
 }
 
 /** Map an unboxed input type (e.g. scalar, constructed type) to the native return type. */
-type GetReturnType<Input> =
+type MapInputToReturnType<Input> =
   // Is a scalar type? (string, number)
   Input extends {type: Scalar}
     ? ReturnTypeMapping[Input['type']]
@@ -67,22 +67,22 @@ type GetReturnType<Input> =
 
 /** Map a schema definition `Record<string, Input>` to the native return type. */
 type MapSchemaToReturnType<T> = {
-  -readonly [K in keyof T]: MapInputToReturnType<T[K]>
+  -readonly [K in keyof T]: MapBoxedInputToReturnType<T[K]>
 }
 
 /** Map a boxed Input type (e.g. array, ref) to the native return type. */
-type MapInputToReturnType<Input> =
+type MapBoxedInputToReturnType<Input> =
   // Is an array type?
   Input extends {
     type: 'array'
     item: infer Item
   }
-    ? MapInputToReturnType<Item>[]
+    ? MapBoxedInputToReturnType<Item>[]
     : // Is a reference type? (can reference constructed type or enums)
     Input extends {type: 'ref'; item: infer Item}
-    ? GetReturnType<Item>
+    ? MapInputToReturnType<Item>
     : // Otherwise, the typed is not wrapped in array of ref.
-      GetReturnType<Input>
+      MapInputToReturnType<Input>
 
 type C_Result = MapSchemaToReturnType<typeof Person.schema>
 
