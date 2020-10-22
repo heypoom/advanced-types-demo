@@ -50,8 +50,8 @@ type B_Result = {
 type MapSchemaToReturnType<T> = {
   -readonly [K in keyof T]: T[K] extends {type: Scalar}
     ? ReturnTypeMapping[T[K]['type']]
-    : T[K] extends {type: 'ref'}
-    ? ['ref', T[K]]
+    : T[K] extends {type: 'ref'; item: {schema: infer Schema}}
+    ? MapSchemaToReturnType<Schema>
     : 'none'
 }
 
@@ -59,3 +59,13 @@ type C_Result = MapSchemaToReturnType<typeof Person.schema>
 
 type D = typeof Team.schema
 type D_Result = MapSchemaToReturnType<D>
+type D_R_2 = D_Result['lead']
+
+const project: D_Result = {
+  name: 'Project Altair',
+  lead: {
+    id: 'lab-member-001',
+    name: 'Poom',
+    age: 19,
+  },
+}
