@@ -48,6 +48,10 @@ const Team = t.type('team', {
   people: t.many(t.of(Person)),
 })
 
+type toUnion = ['hello', 'world'][number]
+
+const a: toUnion = 'hello'
+
 const ProjectStatus = t.enum(
   'forming team',
   'interviewing users',
@@ -58,7 +62,10 @@ const Project = t.type('project', {
   name: t.text(),
   team: t.of(Team),
   status: t.of(ProjectStatus),
+  tagline: t.optional(t.text()),
 })
+
+console.log(JSON.stringify(Project.schema))
 
 interface ReturnTypeMapping {
   id: string
@@ -79,7 +86,7 @@ type B_Result = {
 type EnumType<T extends string[] = []> = {type: 'enum'; choices: T}
 
 /** Map an unboxed input type (e.g. scalar, constructed type) to the native return type. */
-type MapInputToReturnType<Input> =
+type GetReturnType<Input> =
   // Is a scalar type? (string, number)
   Input extends {type: Scalar}
     ? ReturnTypeMapping[Input['type']]
@@ -106,13 +113,9 @@ type MapBoxedInputToReturnType<Input> =
     ? MapBoxedInputToReturnType<Item>[]
     : // Is a reference type? (can reference constructed type or enums)
     Input extends {type: 'ref'; item: infer Item}
-    ? MapInputToReturnType<Item>
+    ? GetReturnType<Item>
     : // Otherwise, the typed is not wrapped in array of ref.
-      MapInputToReturnType<Input>
-
-type C_Result = MapSchemaToReturnType<typeof Person.schema>
-
-type TeamSchema = MapSchemaToReturnType<typeof Team.schema>
+      GetReturnType<Input>
 
 type D_R_Lead = TeamSchema['lead']
 type D_R_People = TeamSchema['people']
@@ -124,32 +127,102 @@ type TypeRef = MapSchemaToReturnType<{
   }
 }>['people']
 
-type TypeArrayRef = MapSchemaToReturnType<{
-  people: {
-    type: 'array'
+type ArrayOfRefs = MapBoxedInputToReturnType<{
+  type: 'array'
+  item: {
+    type: 'ref'
     item: {
-      type: 'ref'
-      item: {type: 'type'; name: 'people'; schema: {name: {type: 'string'}}}
+      type: 'type'
+      name: 'people'
+      schema: {name: {type: 'string'}}
     }
   }
-}>['people']
+}>
+
+const arrRef: ArrayOfRefs = [{name: 'Poom'}]
+
+type TypeEnum = GetReturnType<{
+  type: 'enum'
+  choices: ['hello', 'world']
+}>
+
+const typeEnumTest: TypeEnum = 'hello'
 
 const typeArrayRef: TypeArrayRef = [{name: 'Hello!'}]
 
-const teamRed: TeamSchema = {
-  name: 'Team Red',
-  lead: {
-    id: 'lab-member-001',
-    name: 'Poom',
-    age: 19,
-  },
-  people: [{id: 'lab-member-001', name: 'Poom', age: 19}],
+type ToOptionalField<T> = T | null | undefined
+
+type Input = {name: string; age: number}
+
+type B = {
+  [K in keyof Input]: ToOptionalField<Input[K]>
 }
 
+type PersonSchema = MapSchemaToReturnType<typeof Person.schema>
+type TeamSchema = MapSchemaToReturnType<typeof Team.schema>
 type ProjectSchema = MapSchemaToReturnType<typeof Project.schema>
+
+const poom: PersonSchema = {
+  id: 'lab-member-001',
+  name: 'Poom',
+  age: 19,
+}
+
+const teamRed: TeamSchema = {
+  name: 'Team Red',
+  lead: poom,
+  people: [poom],
+}
 
 const project: ProjectSchema = {
   name: 'Team Red',
   team: teamRed,
-  status: 'forming team',
+  status: 'prototyping',
+  // tagline: {type: }
 }
+
+/** Extract the value of an optional field,
+ *  otherwise return never if not found. */
+type ExtractOptionalFields<T> = {
+  [K in keyof T]: T[K] extends {type: 'optional'; item: infer Item}
+    ? Item
+    : never
+}
+
+/** Create a union out of field names
+ *  in which the field type is not never. */
+export type FilterKeys<T> = {
+  [K in keyof T]: T[K] extends never ? never : K
+}[keyof T]
+
+type NullablePartial<
+  T,
+  NK extends keyof T = {
+    [K in keyof T]: null extends T[K] ? K : never
+  }[keyof T],
+  NP = Partial<Pick<T, NK>> & Pick<T, Exclude<keyof T, NK>>
+> = {[K in keyof NP]: NP[K]}
+
+type PersonType = {
+  name: {type: 'string'}
+  tagline: {type: 'optional'; item: {type: 'string'}}
+  age: {type: 'optional'; item: {type: 'number'}}
+}
+
+type OptionalFields = ExtractOptionalFields<PersonType>
+
+type OptionalKeys = FilterKeys<OptionalFields>
+
+type Optionals = NullablePartial<OptionalFields, OptionalKeys>
+
+type Result = Pick<Optionals, OptionalKeys> &
+  Pick<PersonType, Exclude<keyof PersonType, OptionalKeys>>
+
+const typeOutput: MapSchemaToReturnType<Result> = {
+  name: 'Hello!',
+  age: 50
+}
+
+type B = Extract<A>
+
+type ITeamSchema = typeof Team.schema

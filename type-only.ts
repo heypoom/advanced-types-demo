@@ -26,17 +26,13 @@ const Project = {
   tagline: t.optional(t.text()),
 }
 
-const createResolver = <T>(result: () => T) => result
+const createHandler = <T>(result: () => T) => result
 
-// How do we resolve the type?
-const handler = createResolver<typeof Project>(() => ({
-  name: 'Killer Robot',
+const h = createHandler<typeof Project>(() => ({
+  name: 'Candy Machine',
   team: {
-    name: 'Black Velvet',
-    people: [
-      {name: 'Poom', age: 19},
-      {name: 'Dr. Strange', age: 40},
-    ],
+    name: 'Lollipop Gang',
+    people: [{name: 'Poom', age: 19}],
   },
   tagline: 'Hello',
 }))

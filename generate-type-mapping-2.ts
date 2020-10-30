@@ -31,6 +31,8 @@ const Team = create('team', {
   lead: t.of(Person),
 })
 
+const lead = t.of(Person)
+
 interface ReturnTypeMapping {
   id: string
   string: string
@@ -54,6 +56,22 @@ type MapSchemaToReturnType<T> = {
     ? MapSchemaToReturnType<Schema>
     : 'none'
 }
+
+type GetRefItem<T> = T extends {
+  type: 'ref'
+  item: {schema: infer Schema}
+}
+  ? Schema
+  : 'nope'
+
+type RefTest = GetRefItem<{
+  type: 'ref'
+  item: {
+    type: 'type'
+    name: 'person'
+    schema: {id: 'id'; name: 'string'}
+  }
+}>
 
 type C_Result = MapSchemaToReturnType<typeof Person.schema>
 

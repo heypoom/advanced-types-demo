@@ -23,25 +23,47 @@ const Person = create('person', {
   age: t.number(),
 })
 
-interface ReturnTypeMapping {
+interface ScalarTypeMapping {
+  id: string
   string: string
   number: number
 }
 
-type Scalar = keyof ReturnTypeMapping
+type Scalar = keyof ScalarTypeMapping
 
 Person //?
 
-type R = typeof Person.schema
+type PersonSchema = typeof Person.schema
 
-type B_Result = {
-  -readonly [K in keyof R]: ReturnTypeMapping[R[K]['type']]
+type PersonType = {
+  [K in keyof PersonSchema]: PersonSchema[K]['type']
 }
 
-type MapSchemaToReturnType<T> = {
-  -readonly [K in keyof T]: T[K] extends {type: Scalar}
-    ? ReturnTypeMapping[T[K]['type']]
-    : 'nope'
+type PersonReturnType = {
+  [K in keyof PersonSchema]: ScalarTypeMapping[PersonSchema[K]['type']]
 }
 
-type C_Result = MapSchemaToReturnType<typeof Person.schema>
+// type MapSchemaToReturnType<T> = {
+//   [K in keyof T]: ScalarTypeMapping[T[K]['type']]
+// }
+
+// type MapSchemaToReturnType<T> = {
+//   -readonly [K in keyof T]: T[K] extends {type: Scalar}
+//     ? ScalarTypeMapping[T[K]['type']]
+//     : 'nope'
+// }
+
+// type IsScalar<T> = T extends {type: Scalar}
+//   ? 'yes'
+//   : 'no'
+
+// type A = IsScalar<{type: 'string'}>
+// type B = IsScalar<{type: 'cthulhu'}>
+
+// type GetReturnType<T> = T extends {type: Scalar}
+//   ? ScalarTypeMapping[T['type']]
+//   : T
+
+// type C = GetReturnType<{type: 'number'}>
+
+// type C_Result = MapSchemaToReturnType<typeof Person.schema>
